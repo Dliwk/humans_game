@@ -173,6 +173,7 @@ class Player(GameObject, GravitationalObject, MaterialObject):
         self.respawn_time_text = None
         self.respawn_time = 0
         self.last_respawn_tick = 0
+        self.knockout_time = 0
 
     def punch_all(self):
         power = 3
@@ -194,6 +195,8 @@ class Player(GameObject, GravitationalObject, MaterialObject):
             self.condition_update_time = pygame.time.get_ticks()
 
     def hit(self, val, vec=(0, 0), confusion=True):
+        if self.condition == Condition.Died:
+            return
         self.health_line.set(self.health_line.get() - val)
         self.velocity[0] += vec[0]
         self.velocity[1] += vec[1]
@@ -201,8 +204,8 @@ class Player(GameObject, GravitationalObject, MaterialObject):
         #     self.condition = Condition.Confused
         if val >= 20:
             self.condition = Condition.Knockout
+            self.knockout_time = val / 100 * 6000
             self.condition_update_time = pygame.time.get_ticks()
-            print('al')
         if self.health_line.get() <= 0:
             self.die()
 
@@ -231,7 +234,7 @@ class Player(GameObject, GravitationalObject, MaterialObject):
             if pygame.time.get_ticks() - self.condition_update_time > 600:
                 self.condition = Condition.Normal
         elif self.condition == Condition.Knockout:
-            if pygame.time.get_ticks() - self.condition_update_time > 6000:
+            if pygame.time.get_ticks() - self.condition_update_time > self.knockout_time:
                 self.condition = Condition.Normal
 
         if self.condition == Condition.Normal:
@@ -251,7 +254,7 @@ class Player(GameObject, GravitationalObject, MaterialObject):
             return
 
         if self.onground and self.velocity[1] > 10:
-            self.hit(self.velocity[1]**2 / 5)
+            self.hit(self.velocity[1]**2 / 10)
         if self.is_main:
             if pygame.key.get_pressed()[self.keymap[0]]:
                 if self.velocity[0] > -10:

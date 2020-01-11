@@ -24,6 +24,9 @@ camera = Camera(WIDTH, HEIGHT)
 center = pygame.sprite.Sprite(all_sprites)
 center.image = pygame.Surface((0, 0))
 center.rect = center.image.get_rect()
+look_at = pygame.sprite.Sprite(all_sprites)
+look_at.image = pygame.Surface((0, 0))
+look_at.rect = pygame.Rect(0, 0, 0, 0)
 GameObject.init(all_sprites, walls, grounds, entities, players, camera, center)
 images.init()
 
@@ -33,6 +36,7 @@ player = Player(
     "Первый игрок",
     (0, 0),
     True,
+    (pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_f)
 )
 another_player = Player(
     (all_sprites, players, entities),
@@ -40,7 +44,7 @@ another_player = Player(
     "Второй игрок",
     (0, 0),
     True,
-    (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_m)
+    (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_RCTRL)
 )
 blocks = []
 for i in range(100):
@@ -71,7 +75,10 @@ while _running:
     all_sprites.draw(display)
     all_sprites.update()
 
-    camera.update(player)
+    w = player.rect.x - another_player.rect.x
+    h = player.rect.y - another_player.rect.y
+    look_at.rect = pygame.Rect(another_player.rect.x, another_player.rect.y, w, h)
+    camera.update(look_at)
     camera.apply_all(all_sprites.sprites())
 
     pygame.display.flip()
