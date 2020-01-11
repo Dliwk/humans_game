@@ -30,7 +30,7 @@ def init():
         "name": i,
         "frames": load_frames(i)
     } for i in (
-        'player_normal', 'player_punching', 'player_confused', 'player_knockout', 'player_died'
+        'player_normal', 'player_punching', 'player_knockout', 'player_died'
     )])
     stone_block_image = load_image('stone.png')
 
