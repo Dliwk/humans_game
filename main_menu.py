@@ -5,16 +5,18 @@ import ui
 def show_main_menu(display):
     display.fill(pygame.Color('gray'))
     _running = True
+    return_val = 0
 
-    def stop():
-        nonlocal _running
+    def stop(return_value):
+        nonlocal _running, return_val
         _running = False
+        return_val = return_value
 
     menu_ui = pygame.sprite.Group()
     btn_start = ui.Button(
         (menu_ui, ),
         pygame.Rect(300, 275, 200, 50),
-        lambda: stop(),
+        lambda: stop(0),
         (10, 200, 10),
         (0, 180, 0),
         (0, 80, 0),
@@ -40,3 +42,5 @@ def show_main_menu(display):
         menu_ui.draw(display)
 
         pygame.display.flip()
+
+    return return_val

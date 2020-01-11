@@ -1,8 +1,6 @@
 import pygame
 import images
 from enum import Enum
-import threading
-import time
 
 
 RESPAWN_TIME = 10
@@ -141,12 +139,8 @@ class Condition(Enum):
 
 
 class Player(GameObject, GravitationalObject, MaterialObject):
-    def __init__(self, groups, pos, name, velocity, is_main, keymap: tuple = None):
+    def __init__(self, groups, pos, name, velocity):
         super().__init__(groups, velocity)
-
-        if keymap is None:
-            keymap = (pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_j)
-        self.keymap = keymap
 
         self.frames = images.frames.player_normal
         self.cur_frame = 0
@@ -154,14 +148,11 @@ class Player(GameObject, GravitationalObject, MaterialObject):
         self.rect = self.image.get_rect()
         self.rect.x = pos[0]
         self.rect.y = pos[1]
-        self.jump = False
         self.blocks = []
-        self.is_main = is_main
 
         self.health_line = HealthLine(
             (GameObject.all_sprites,), (pos[0], pos[1] + HEALTH_LINE_UP))
         self.health_line.set(100)
-        self.died = False
         self.name = Text(
             (GameObject.all_sprites,),
             (pos[0], pos[1] + 30),
@@ -176,10 +167,10 @@ class Player(GameObject, GravitationalObject, MaterialObject):
         self.knockout_time = 0
 
     def punch_all(self):
-        power = 3
+        power = 1
         if self.condition == Condition.Normal:  # Первый удар
             power *= 2
-        power += abs(self.velocity[0]) + abs(self.velocity[1]) * 2
+        power += abs(self.velocity[0]) + abs(self.velocity[1] * 2) * 2
         if self.condition == Condition.Punching:
             for entity in pygame.sprite.spritecollide(
                     self, GameObject.entities, False):
@@ -188,18 +179,18 @@ class Player(GameObject, GravitationalObject, MaterialObject):
                     hitfrom_y = 1 if entity.rect.y > self.rect.y else -1
                     entity.hit(power, (
                         power * hitfrom_x,
-                        power * hitfrom_y  / 100
+                        power * hitfrom_y / 100
                     ))
         if self.condition == Condition.Normal:
             self.condition = Condition.Punching
             self.condition_update_time = pygame.time.get_ticks()
 
     def hit(self, val, vec=(0, 0), confusion=True):
+        self.velocity[0] += vec[0]
+        self.velocity[1] += vec[1]
         if self.condition == Condition.Died:
             return
         self.health_line.set(self.health_line.get() - val)
-        self.velocity[0] += vec[0]
-        self.velocity[1] += vec[1]
         # if 20 > val > 0:
         #     self.condition = Condition.Confused
         if val >= 20:
@@ -250,26 +241,14 @@ class Player(GameObject, GravitationalObject, MaterialObject):
             self.punch_time += 0.1
             self.frames = images.frames.player_punching
 
-        if self.died or self.condition == Condition.Knockout:
+        if self.condition in (Condition.Knockout, Condition.Died):
             return
 
         if self.onground and self.velocity[1] > 10:
             self.hit(self.velocity[1]**2 / 10)
-        if self.is_main:
-            if pygame.key.get_pressed()[self.keymap[0]]:
-                if self.velocity[0] > -10:
-                    self.velocity[0] -= 2
-            if pygame.key.get_pressed()[self.keymap[1]]:
-                if self.velocity[0] < 10:
-                    self.velocity[0] += 2
-            if pygame.key.get_pressed()[self.keymap[2]] and \
-                    not self.jump and self.onground:
-                self.velocity[1] -= 15
-                self.jump = True
-            if pygame.key.get_pressed()[pygame.K_SPACE]:
-                self.velocity[1] -= 2
-            if self.onground:
-                self.jump = False
+
+        self.parse_input()
+
         self.health_line.rect.x = self.rect.x
         self.health_line.rect.y = self.rect.y
 
@@ -281,9 +260,8 @@ class Player(GameObject, GravitationalObject, MaterialObject):
             self.hit(-0.18)
 
     def rise(self):
-        if not self.died:
+        if self.condition != Condition.Died:
             return
-        self.died = False
         self.health_line = HealthLine(
             (GameObject.all_sprites,),
             (self.rect.x, self.rect.y + 20)
@@ -308,9 +286,8 @@ class Player(GameObject, GravitationalObject, MaterialObject):
         self.respawn_time = sec
 
     def die(self, auto_respawn=True):
-        if self.died:
+        if self.condition == Condition.Died:
             return
-        self.died = True
         self.health_line.kill()
         self.condition = Condition.Died
         self.condition_update_time = pygame.time.get_ticks()
@@ -318,24 +295,32 @@ class Player(GameObject, GravitationalObject, MaterialObject):
             self.auto_respawn(RESPAWN_TIME)
 
     def parse_event(self, event):
-        if not event:
+        pass
+
+    def parse_input(self):
+        pass
+
+
+class LocalPlayer(Player):
+    def __init__(self, groups, pos, name, velocity, keymap):
+        super().__init__(groups, pos, name, velocity)
+        self.keymap = keymap
+
+    def parse_input(self):
+        if self.condition in (Condition.Died, Condition.Knockout):
             return
+        if pygame.key.get_pressed()[self.keymap[0]] and self.velocity[0] > -10:
+            self.velocity[0] -= 2
+        if pygame.key.get_pressed()[self.keymap[1]] and self.velocity[0] < 10:
+            self.velocity[0] += 2
+        if pygame.key.get_pressed()[self.keymap[2]]:
+            if self.onground:
+                self.velocity[1] -= 15
+
+    def parse_event(self, event):
         if event.type == pygame.KEYDOWN:
-            if self.is_main:
-                # Start debug events...
-                # if event.key == pygame.K_p:
-                #     self.hit(21)
-                # elif event.key == pygame.K_h:
-                #     self.health_line.set(self.health_line.get() + 10)
-                # elif event.key == pygame.K_r:
-                #     self.respawn()
-                # elif event.key == pygame.K_k:
-                #     self.die()
-                # End debug events
-                if self.died:
-                    return
-                if event.key == self.keymap[3]:
-                    self.punch_all()
+            if event.key == self.keymap[3] and self.condition != Condition.Punching:
+                self.punch_all()
 
 
 class Ground(GameObject):
