@@ -3,6 +3,7 @@ import sys
 from game_object import LocalPlayer, Wall, Ground, Camera, GameObject
 from main_menu import show_main_menu
 import images
+from maps import load_map
 
 # Инициализация...
 pygame.init()
@@ -32,34 +33,23 @@ images.init()
 
 player = LocalPlayer(
     (all_sprites, players, entities),
-    (80, -80),
+    (0, 0),
     "Первый игрок",
     (0, 0),
     (pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_f)
 )
 another_player = LocalPlayer(
     (all_sprites, players, entities),
-    (80, -80),
+    (0, 0),
     "Второй игрок",
     (0, 0),
     (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_RCTRL)
 )
 blocks = []
-for i in range(100):
-    blocks.append(Ground(
-        (all_sprites, grounds),
-        (40 * i - 80, 80)
-    ))
-for i in range(100):
-    blocks.append(Wall(
-        (all_sprites, walls),
-        (-80, -40 * i + 80)
-    ))
-for i in range(100):
-    blocks.append(Wall(
-        (all_sprites, walls),
-        (4000 - 80, -40 * i + 80)
-    ))
+with open('default_map.txt') as f:
+    path_to_map = f.read().strip()
+    load_map(path_to_map, all_sprites, walls, grounds, blocks)
+
 # Конец инициализации...
 
 _running = True
@@ -73,9 +63,12 @@ while _running:
     all_sprites.draw(display)
     all_sprites.update()
 
-    w = player.rect.x - another_player.rect.x
-    h = player.rect.y - another_player.rect.y
-    look_at.rect = pygame.Rect(another_player.rect.x, another_player.rect.y, w, h)
+    w = another_player.rect.x - player.rect.x
+    h = another_player.rect.y - player.rect.y
+    if abs(w) > 1600 or abs(h) > 1600:
+        w = player.rect.x
+        h = player.rect.y
+    look_at.rect = pygame.Rect(player.rect.x, player.rect.y, w, h)
     camera.update(look_at)
     camera.apply_all(all_sprites.sprites())
 
