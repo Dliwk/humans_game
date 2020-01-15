@@ -1,13 +1,13 @@
 import pygame
 import sys
-from game_object import LocalPlayer, Wall, Ground, Camera, GameObject
+from game_object import LocalPlayer, Camera, GameObject, PlayerBot, AdvancedPlayerBot
 from main_menu import show_main_menu
 import images
 from maps import load_map
+import conf
 
 # Инициализация...
 pygame.init()
-FPS = 60
 SIZE = WIDTH, HEIGHT = 800, 600
 clock = pygame.time.Clock()
 display = pygame.display.set_mode(SIZE)
@@ -38,12 +38,18 @@ player = LocalPlayer(
     (0, 0),
     (pygame.K_a, pygame.K_d, pygame.K_w, pygame.K_f)
 )
-another_player = LocalPlayer(
-    (all_sprites, players, entities),
+# another_player = LocalPlayer(
+#     (all_sprites, players, entities),
+#     (0, 0),
+#     "Второй игрок",
+#     (0, 0),
+#     (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_RCTRL)
+# )
+another_player = AdvancedPlayerBot(
+    (all_sprites, entities),
     (0, 0),
-    "Второй игрок",
-    (0, 0),
-    (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_RCTRL)
+    "Злой человек",
+    (0, 0)
 )
 blocks = []
 with open('default_map.txt') as f:
@@ -63,6 +69,11 @@ while _running:
     all_sprites.draw(display)
     all_sprites.update()
 
+    if conf.FPS != 60:
+        conf.slowmo_time -= 1
+    if conf.slowmo_time == 0:
+        conf.FPS = 60
+
     w = another_player.rect.x - player.rect.x
     h = another_player.rect.y - player.rect.y
     if abs(w) > 1600 or abs(h) > 1600:
@@ -73,4 +84,4 @@ while _running:
     camera.apply_all(all_sprites.sprites())
 
     pygame.display.flip()
-    clock.tick(FPS)
+    clock.tick(conf.FPS)

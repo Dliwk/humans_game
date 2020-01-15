@@ -1,11 +1,20 @@
+import threading
+import random
+import time
 import pygame
 import images
 from enum import Enum
+import conf
 
 
 RESPAWN_TIME = 10
 MAX_VELOCITY = 50
 HEALTH_LINE_UP = 20
+
+
+def do_slowmo(smtime):
+    conf.FPS = 15
+    conf.slowmo_time = smtime
 
 
 class GameObject(pygame.sprite.Sprite):
@@ -198,6 +207,7 @@ class Player(GameObject, GravitationalObject, MaterialObject):
             self.knockout_time = val / 100 * 6000
             self.condition_update_time = pygame.time.get_ticks()
         if self.health_line.get() <= 0:
+            do_slowmo(60)
             self.die()
 
     def update_pos(self):
@@ -383,3 +393,57 @@ class Text(pygame.sprite.Sprite):
         self.image = pygame.font.Font(None, self.size).render(
             text, 1, pygame.Color('black')
         )
+
+
+class PlayerBot(Player):
+    def __init__(self, groups, pos, name, velocity):
+        super().__init__(groups, pos, name, velocity)
+        self.keys = [False, False, False, False]
+        self.ai_thread = threading.Thread(target=self.ai, daemon=True)
+        self.ai_thread.start()
+
+    def ai(self):
+        while True:
+            key = random.randint(0, 3)
+            self.keys[key] = True
+            time.sleep(random.random() * 5)
+            self.keys[key] = False
+
+    def parse_input(self):
+        if self.condition in (Condition.Died, Condition.Knockout):
+            return
+        if self.keys[0] and self.velocity[0] > -10:
+            self.velocity[0] -= 2
+        if self.keys[1] and self.velocity[0] < 10:
+            self.velocity[0] += 2
+        if self.keys[2]:
+            if self.onground:
+                self.velocity[1] -= 15
+        if self.keys[3] and self.condition != Condition.Punching:
+            self.punch_all()
+
+
+class AdvancedPlayerBot(PlayerBot):
+    def __init__(self, groups, pos, name, velocity):
+        super().__init__(groups, pos, name, velocity)
+        self.punching_ai_thread = threading.Thread(target=self.punching_ai, daemon=True)
+        self.punching_ai_thread.start()
+
+    def ai(self):
+        while True:
+            player = random.choice(GameObject.players.sprites())
+            if player.rect.x < self.rect.x:
+                self.keys[0] = True
+                self.keys[1] = False
+            else:
+                self.keys[0] = False
+                self.keys[1] = True
+            self.keys[2] = player.rect.y - 80 < self.rect.y
+            time.sleep(random.random() * 2)
+
+    def punching_ai(self):
+        while True:
+            for player in GameObject.players.sprites():
+                if abs(player.rect.x - self.rect.x) < 160 and self.condition != Condition.Punching:
+                    self.punch_all()
+            time.sleep(random.random() * 0.5)
