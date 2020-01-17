@@ -6,7 +6,6 @@ import images
 from enum import Enum
 import conf
 
-
 RESPAWN_TIME = 10
 MAX_VELOCITY = 50
 HEALTH_LINE_UP = 20
@@ -39,14 +38,18 @@ class GameObject(pygame.sprite.Sprite):
         super().__init__(*groups)
 
         self.onground = False
+        self.onwall = False
         self.last_onground_time = pygame.time.get_ticks()
         self.velocity = list(velocity)
 
     def _update(self):
         if isinstance(self, MaterialObject):
             if pygame.sprite.spritecollideany(self, GameObject.walls):
-                self.rect.x -= self.velocity[0]
-                self.velocity[0] = 0
+                if self.velocity[0]:
+                    self.rect.x -= self.velocity[0]
+                self.onwall = True
+            else:
+                self.onwall = False
             if pygame.sprite.spritecollideany(self, GameObject.grounds):
                 if self.velocity[1] < 0:
                     self.rect.y -= self.velocity[1]
@@ -61,6 +64,12 @@ class GameObject(pygame.sprite.Sprite):
         if self.onground:
             if self.velocity[1] > 0:
                 self.velocity[1] = 0
+        if self.onwall:
+            if self.velocity[0]:
+                self.velocity[0] //= 2
+        # if self.onwall:
+        #     if abs(self.velocity[0]) > 0.5:
+        #         self.velocity[0] = 0
 
         # Сила трения
         if self.onground:
@@ -150,7 +159,6 @@ class Condition(Enum):
 class Player(GameObject, GravitationalObject, MaterialObject):
     def __init__(self, groups, pos, name, velocity):
         super().__init__(groups, velocity)
-
         self.frames = images.frames.player_normal
         self.cur_frame = 0
         self.image = self.frames[self.cur_frame]
@@ -200,20 +208,16 @@ class Player(GameObject, GravitationalObject, MaterialObject):
         if self.condition == Condition.Died:
             return
         self.health_line.set(self.health_line.get() - val)
-        # if 20 > val > 0:
-        #     self.condition = Condition.Confused
-        if val >= 20:
+        if val >= 35:
             self.condition = Condition.Knockout
-            self.knockout_time = val / 100 * 6000
+            self.knockout_time = val / 100 * 6000 * 60 / conf.FPS
             self.condition_update_time = pygame.time.get_ticks()
         if self.health_line.get() <= 0:
-            do_slowmo(60)
+            if val >= 35:
+                do_slowmo(60)
             self.die()
 
     def update_pos(self):
-        self.cur_frame = (self.cur_frame + 0.05 * len(self.frames)) % len(self.frames)
-        self.image = self.frames[int(self.cur_frame)]
-
         self.health_line.rect.x = self.rect.x
         self.health_line.rect.y = self.rect.y
 
@@ -224,7 +228,7 @@ class Player(GameObject, GravitationalObject, MaterialObject):
             self.respawn_time_text.rect.x = self.rect.x - 40
             self.respawn_time_text.rect.y = self.rect.y - 30
 
-            if pygame.time.get_ticks() - self.last_respawn_tick > 660:
+            if pygame.time.get_ticks() - self.last_respawn_tick > 660 * 60 / conf.FPS:
                 self.last_respawn_tick = pygame.time.get_ticks()
                 self.respawn_time -= 1
                 self.respawn_time_text.set('Возрождение через: ' + str(self.respawn_time))
@@ -232,7 +236,7 @@ class Player(GameObject, GravitationalObject, MaterialObject):
                 self.respawn()
 
         if self.condition not in (Condition.Normal, Condition.Died, Condition.Knockout):
-            if pygame.time.get_ticks() - self.condition_update_time > 600:
+            if pygame.time.get_ticks() - self.condition_update_time > 600 * 60 / conf.FPS:
                 self.condition = Condition.Normal
         elif self.condition == Condition.Knockout:
             if pygame.time.get_ticks() - self.condition_update_time > self.knockout_time:
@@ -251,11 +255,16 @@ class Player(GameObject, GravitationalObject, MaterialObject):
             self.punch_time += 0.1
             self.frames = images.frames.player_punching
 
+        self.cur_frame = (self.cur_frame + 0.05 * len(self.frames)) % len(self.frames)
+        self.image = self.frames[int(self.cur_frame)]
+
         if self.condition in (Condition.Knockout, Condition.Died):
             return
 
         if self.onground and self.velocity[1] > 10:
-            self.hit(self.velocity[1]**2 / 10)
+            self.hit(self.velocity[1] ** 2 / 10)
+        if self.onwall and self.velocity[0] > 20:
+            self.hit(self.velocity[0] ** 2 / 20)
 
         self.parse_input()
 
@@ -317,6 +326,12 @@ class LocalPlayer(Player):
         self.keymap = keymap
 
     def parse_input(self):
+        # DEBUG:
+        if pygame.key.get_pressed()[pygame.K_m]:
+            self.velocity[0] += 10
+        if pygame.key.get_pressed()[pygame.K_b]:
+            do_slowmo(15 * 5)
+
         if self.condition in (Condition.Died, Condition.Knockout):
             return
         if pygame.key.get_pressed()[self.keymap[0]] and self.velocity[0] > -10:
@@ -424,7 +439,8 @@ class PlayerBot(Player):
 
 
 class AdvancedPlayerBot(PlayerBot):
-    def __init__(self, groups, pos, name, velocity):
+    def __init__(self, groups, pos, name, velocity, sleep_time=2):
+        self.sleep_time = sleep_time
         super().__init__(groups, pos, name, velocity)
         self.punching_ai_thread = threading.Thread(target=self.punching_ai, daemon=True)
         self.punching_ai_thread.start()
@@ -439,11 +455,12 @@ class AdvancedPlayerBot(PlayerBot):
                 self.keys[0] = False
                 self.keys[1] = True
             self.keys[2] = player.rect.y - 80 < self.rect.y
-            time.sleep(random.random() * 2)
+            time.sleep(random.random() * self.sleep_time)
 
     def punching_ai(self):
         while True:
             for player in GameObject.players.sprites():
-                if abs(player.rect.x - self.rect.x) < 160 and self.condition != Condition.Punching:
+                if (abs(player.rect.x - self.rect.x) < 40 or abs(80 < player.rect.x - self.rect.x) < 160) and \
+                        self.condition != Condition.Punching:
                     self.punch_all()
-            time.sleep(random.random() * 0.5)
+            time.sleep(random.random() * self.sleep_time / 4)

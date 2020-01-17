@@ -51,6 +51,12 @@ another_player = AdvancedPlayerBot(
     "Злой человек",
     (0, 0)
 )
+# bot2 = AdvancedPlayerBot(
+#     (all_sprites, entities),
+#     (0, 0),
+#     "Второй злой человек",
+#     (0, 0)
+# )
 blocks = []
 with open('default_map.txt') as f:
     path_to_map = f.read().strip()
