@@ -326,12 +326,6 @@ class LocalPlayer(Player):
         self.keymap = keymap
 
     def parse_input(self):
-        # DEBUG:
-        if pygame.key.get_pressed()[pygame.K_m]:
-            self.velocity[0] += 10
-        if pygame.key.get_pressed()[pygame.K_b]:
-            do_slowmo(15 * 5)
-
         if self.condition in (Condition.Died, Condition.Knockout):
             return
         if pygame.key.get_pressed()[self.keymap[0]] and self.velocity[0] > -10:

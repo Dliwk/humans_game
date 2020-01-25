@@ -5,30 +5,80 @@ import ui
 def show_main_menu(display):
     display.fill(pygame.Color('gray'))
     _running = True
-    return_val = 0
+    return_val = {
+        'mode': 'two_players',
+        'another_bot': False
+    }
 
-    def stop(return_value):
-        nonlocal _running, return_val
+    def stop():
+        nonlocal _running
         _running = False
-        return_val = return_value
+
+    def set_mode():
+        nonlocal return_val
+        if return_val['mode'] == 'two_players':
+            return_val['mode'] = 'with_bot'
+            btn_mode.text.set_value(pygame.Color('white'), 'Против ИИ')
+        elif return_val['mode'] == 'with_bot':
+            return_val['mode'] = 'two_players'
+            btn_mode.text.set_value(pygame.Color('white'), 'Против игрока')
+
+    def set_bot_using():
+        nonlocal return_val, btn_use_bot
+        if not return_val['another_bot']:
+            return_val['another_bot'] = True
+            btn_use_bot.text.set_value(pygame.Color('white'), 'Использовать бота')
+        else:
+            return_val['another_bot'] = False
+            btn_use_bot.text.set_value(pygame.Color('red'), 'Не использовать бота')
 
     menu_ui = pygame.sprite.Group()
     btn_start = ui.Button(
         (menu_ui, ),
         pygame.Rect(300, 275, 200, 50),
-        lambda: stop(0),
+        stop,
         (10, 200, 10),
         (0, 180, 0),
         (0, 80, 0),
         "Начать игру",
-        (255, 255, 255)
+        pygame.Color('white')
     )
+
+    btn_use_bot = ui.Button(
+        (menu_ui, ),
+        pygame.Rect(225, 175, 350, 50),
+        set_bot_using,
+        (10, 200, 10),
+        (0, 180, 0),
+        (0, 80, 0),
+        "Не использовать бота",
+        pygame.Color('red')
+    )
+
+    btn_mode = ui.Button(
+        (menu_ui, ),
+        pygame.Rect(225, 125, 350, 50),
+        set_mode,
+        (10, 200, 10),
+        (0, 180, 0),
+        (0, 80, 0),
+        'Против игрока',
+        pygame.Color('white')
+    )
+
     color = (0, 0, 0)
     title = ui.TextLabel(
         (menu_ui, ),
         pygame.Rect(300, 50, 200, 50),
         "Человечки!!!",
         color
+    )
+
+    settings_title = ui.TextLabel(
+        (menu_ui, ),
+        pygame.Rect(325, 100, 200, 30),
+        "Настройки игры",
+        pygame.Color('black')
     )
     while _running:
         for event in pygame.event.get():
@@ -37,7 +87,7 @@ def show_main_menu(display):
             menu_ui.update(event)
 
         color = ((color[0] + 1) % 255, (color[1] - 1) % 255, (color[2] + 2) % 255)
-        title.set_color(color)
+        title.set_value(color, 'Человечки!!!')
         menu_ui.update()
         menu_ui.draw(display)
 

@@ -9,14 +9,15 @@ class TextLabel(pygame.sprite.Sprite):
         font = pygame.font.Font(None, rect.height - 5)
         self.image = font.render(text, 1, color)
 
-    def set_color(self, color):
+    def set_value(self, color, text):
+        self.text = text
         font = pygame.font.Font(None, self.rect.height - 5)
         self.image = font.render(self.text, 1, color)
 
 
 class Button(pygame.sprite.Sprite):
     def __init__(self, groups, rect, action,
-                 color_inactive, color_active, color_focus, text, text_color):
+                 color_inactive, color_focus, color_active, text, text_color):
         super().__init__(*groups)
         self.rect = rect
         self.action = action
