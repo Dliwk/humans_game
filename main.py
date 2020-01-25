@@ -1,4 +1,4 @@
-import sys
+import os
 import pygame
 
 import conf
@@ -46,7 +46,7 @@ if selected_game['mode'] == 'two_players':
         (0, 0),
         (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_RCTRL)
     )
-elif selected_game['mode'] == 'with_bot':
+else:  # selected_game['mode'] == 'with_bot':
     another_player = AdvancedPlayerBot(
         (all_sprites, entities),
         (0, 0),
@@ -61,9 +61,16 @@ if selected_game['another_bot']:
         (0, 0)
     )
 blocks = []
-with open('default_map.txt') as f:
-    path_to_map = f.read().strip()
-    load_map(path_to_map, all_sprites, walls, grounds, blocks)
+if selected_game['map'] == 'default':
+    with open('default_map.txt') as f:
+        path_to_map = f.read().strip()
+        load_map(path_to_map, all_sprites, walls, grounds, blocks)
+elif selected_game['map'] == '20x20':
+    load_map(os.path.join('data', 'maps', 'box20x20.map'), all_sprites, walls, grounds, blocks)
+elif selected_game['map'] == '30x30':
+    load_map(os.path.join('data', 'maps', 'box30x30.map'), all_sprites, walls, grounds, blocks)
+elif selected_game['map'] == '100x100':
+    load_map(os.path.join('data', 'maps', 'box100x100.map'), all_sprites, walls, grounds, blocks)
 
 # Конец инициализации...
 
@@ -85,7 +92,7 @@ while _running:
 
     w = another_player.rect.x - player.rect.x
     h = another_player.rect.y - player.rect.y
-    if abs(w) > 1600 or abs(h) > 1600:
+    if abs(w) > WIDTH + 10 or abs(h) > HEIGHT + 10:
         w = player.rect.x
         h = player.rect.y
     look_at.rect = pygame.Rect(player.rect.x, player.rect.y, w, h)
