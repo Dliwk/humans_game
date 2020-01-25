@@ -41,25 +41,25 @@ class Button(pygame.sprite.Sprite):
             return
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if self.rect.collidepoint(event.pos) and not self.active and \
-               (pygame.time.get_ticks() - self.released_time) > 20:
+                    (pygame.time.get_ticks() - self.released_time) > 20:
                 self.image.fill(self.color_active)
                 self.active = True
                 self.pressed_time = pygame.time.get_ticks()
         elif event.type == pygame.MOUSEMOTION:
             if self.rect.collidepoint(event.pos) and not self.active and \
-               not self.in_focus:
+                    not self.in_focus:
                 self.image.fill(self.color_focus)
                 self.in_focus = True
             elif (
-                not self.rect.collidepoint(event.pos) and
-                not self.active and
-                self.in_focus
+                    not self.rect.collidepoint(event.pos) and
+                    not self.active and
+                    self.in_focus
             ):
                 self.in_focus = False
                 self.image.fill(self.color_inactive)
         elif event.type == pygame.MOUSEBUTTONUP:
             if self.rect.collidepoint(event.pos) and self.active and \
-               (pygame.time.get_ticks() - self.pressed_time) > 20:
+                    (pygame.time.get_ticks() - self.pressed_time) > 20:
                 self.action()
                 self.released_time = pygame.time.get_ticks()
             self.active = False

@@ -50,7 +50,7 @@ def show_main_menu(display):
 
     menu_ui = pygame.sprite.Group()
     btn_start = ui.Button(
-        (menu_ui, ),
+        (menu_ui,),
         pygame.Rect(300, 475, 200, 50),
         stop,
         (10, 200, 10),
@@ -61,7 +61,7 @@ def show_main_menu(display):
     )
 
     btn_use_bot = ui.Button(
-        (menu_ui, ),
+        (menu_ui,),
         pygame.Rect(225, 175, 350, 50),
         set_bot_using,
         (10, 200, 10),
@@ -72,7 +72,7 @@ def show_main_menu(display):
     )
 
     btn_mode = ui.Button(
-        (menu_ui, ),
+        (menu_ui,),
         pygame.Rect(225, 125, 350, 50),
         set_mode,
         (10, 200, 10),
@@ -95,14 +95,14 @@ def show_main_menu(display):
 
     color = (0, 0, 0)
     title = ui.TextLabel(
-        (menu_ui, ),
+        (menu_ui,),
         pygame.Rect(300, 50, 200, 50),
         "Человечки!!!",
         color
     )
 
     settings_title = ui.TextLabel(
-        (menu_ui, ),
+        (menu_ui,),
         pygame.Rect(325, 100, 200, 30),
         "Настройки игры",
         pygame.Color('black')
